@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GigTask · Workspace</title><link rel="stylesheet" href="/styles.css"><script src="/config.js"></script><script type="module" src="/app.js"></script></head>
+<body>
+<div class="sheet">
+<figure class="banner" aria-hidden="true"><div class="wordmark">GigTask</div></figure>
+<header class="topbar">
+    <a class="brand" href="#browse" aria-label="GigTask home">GigTask<sup>®</sup></a>
+    <nav aria-label="Main navigation" id="navigation"></nav>
+    <button id="actor-switch" class="secondary">Choose demo actor</button>
+</header>
+<main>
+    <section class="page">
+    <div class="meta-line"><span>Workspace / <span id="breadcrumb">Welcome</span> · GigTask · Work marketplace</span><span class="demo">Demo actors · API</span></div>
+    <div class="intro"><h1 id="title">Welcome to GigTask</h1><p id="subtitle">Discover talent, fund a gig, and follow its progress.</p></div>
+    <section class="feature">
+        <dl class="facts" aria-label="Current context"><div><dt>Actor</dt><dd id="fact-actor">Not chosen</dd></div><div><dt>Role</dt><dd id="fact-role">—</dd></div><div><dt>Scope</dt><dd id="fact-scope">Welcome</dd></div><div><dt>Year</dt><dd id="fact-year">2026</dd></div></dl>
+        <p class="statement" id="statement"></p>
+    </section>
+    <div id="notice" role="status"></div>
+    <div id="stats" class="stats"></div>
+    <div class="panel"><div class="panel-top"><div><h2 id="panel-title">Your workspace</h2><p id="panel-description"></p></div><button id="refresh" class="secondary">↻ Retry / refresh</button></div><div id="tabs" class="tabs"></div>
+    <form id="filters" class="filters"></form>
+    <div id="content" aria-live="polite"></div>
+    <div id="pagination" class="pagination"></div>
+    </div>
+    <p class="closing" id="closing"></p>
+    <p class="footnote">DEMO ACTORS · CONFIGURABLE DATABASES · NO REAL PAYMENTS OR AUTHENTICATION</p>
+</section>
+</main>
+</div>
+<dialog id="actor-dialog" aria-labelledby="actor-heading"><form id="actor-form"><div class="dialog-heading"><h2 id="actor-heading">Choose your demo actor</h2><button type="button" id="close-actor" aria-label="Close actor selector">✕</button></div><p>Switch existing records without registering or logging in. Admin can inspect records but cannot change them.</p><label>Role<select id="actor-role" required><option value="">Select your role</option><option value="client">Client</option><option value="freelancer">Freelancer</option><option value="admin">Admin · read only</option></select></label><div id="actor-picker"><label>Find a demo actor<input id="actor-search" type="search" placeholder="Search seeded names"></label><button type="button" id="actor-search-button" class="secondary">Search</button><label id="actor-label">Choose an actor<select id="actor-id" required></select></label><div id="actor-pages" class="pagination"></div></div><p id="actor-error" role="status"></p><div class="actions"><button type="submit" id="actor-continue" class="primary" disabled>Continue</button><button type="button" id="actor-retry" class="secondary">Retry loading actors</button></div></form></dialog>
+<dialog id="map-dialog" aria-labelledby="map-heading"></dialog>
+</body></html>

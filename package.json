@@ -1,0 +1,24 @@
+{
+  "name": "gigtask-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/dev.js",
+    "start:demo": "node scripts/dev.js --demo",
+    "start:backend": "npm --prefix backend start",
+    "start:frontend": "npm --prefix frontend start",
+    "db:migrate": "npm --prefix backend run migrate",
+    "db:seed": "npm --prefix backend run seed:linked",
+    "db:pings": "npm --prefix backend run refresh:pings",
+    "test": "node --test backend/demo/server.test.js backend/test/*.test.js",
+    "test:browser": "node scripts/browser-smoke.js",
+    "db:reset": "npm --prefix backend run reset:demo",
+    "db:seed:scale": "npm --prefix backend run seed:scale",
+    "audit:scale": "npm --prefix backend run audit:scale",
+    "test:browser:live": "GIGTASK_E2E_LIVE=1 node scripts/browser-smoke.js",
+    "test:full": "REQUIRE_DB_TESTS=1 node --test backend/demo/server.test.js backend/test/*.test.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}

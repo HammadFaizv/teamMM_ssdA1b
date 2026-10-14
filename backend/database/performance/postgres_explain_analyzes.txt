@@ -1,0 +1,56 @@
+============================================================
+POSTGRESQL PERFORMANCE TEST
+============================================================
+
+
+                                                                                                   QUERY PLAN                                                                                                   
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ WindowAgg  (cost=8317.24..8320.72 rows=200 width=52) (actual time=96.319..97.327 rows=4996.00 loops=1)
+   Window: w1 AS (ORDER BY latest_freelancer_avg.moving_avg_revenue ROWS UNBOUNDED PRECEDING)
+   Storage: Memory  Maximum Storage: 17kB
+   Buffers: shared hit=41109
+   ->  Sort  (cost=8317.22..8317.72 rows=200 width=44) (actual time=96.310..96.439 rows=4996.00 loops=1)
+         Sort Key: latest_freelancer_avg.moving_avg_revenue DESC
+         Sort Method: quicksort  Memory: 388kB
+         Buffers: shared hit=41109
+         ->  Subquery Scan on latest_freelancer_avg  (cost=39.52..8309.57 rows=200 width=44) (actual time=0.866..95.242 rows=4996.00 loops=1)
+               Buffers: shared hit=41106
+               ->  Unique  (cost=39.52..8309.57 rows=200 width=44) (actual time=0.864..94.889 rows=4996.00 loops=1)
+                     Buffers: shared hit=41106
+                     ->  Incremental Sort  (cost=39.52..8206.01 rows=41426 width=44) (actual time=0.864..93.072 rows=41227.00 loops=1)
+                           Sort Key: seven_day_freelancer_avg.freelancer_id, seven_day_freelancer_avg.earning_day DESC
+                           Presorted Key: seven_day_freelancer_avg.freelancer_id
+                           Full-sort Groups: 1138  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                           Buffers: shared hit=41106
+                           ->  Subquery Scan on seven_day_freelancer_avg  (cost=1.11..6090.44 rows=41426 width=44) (actual time=0.410..86.665 rows=41227.00 loops=1)
+                                 Buffers: shared hit=41103
+                                 ->  WindowAgg  (cost=1.11..5676.18 rows=41426 width=76) (actual time=0.409..84.242 rows=41227.00 loops=1)
+                                       Window: w1 AS (PARTITION BY contracts.freelancer_id ORDER BY (date_trunc('day'::text, contracts.created_at)) RANGE BETWEEN '6 days'::interval PRECEDING AND CURRENT ROW)
+                                       Storage: Memory  Maximum Storage: 17kB
+                                       Buffers: shared hit=41103
+                                       ->  GroupAggregate  (cost=0.97..4951.23 rows=41426 width=44) (actual time=0.382..50.564 rows=41227.00 loops=1)
+                                             Group Key: contracts.freelancer_id, (date_trunc('day'::text, contracts.created_at))
+                                             Buffers: shared hit=41103
+                                             ->  Incremental Sort  (cost=0.97..4019.14 rows=41426 width=18) (actual time=0.361..36.125 rows=41452.00 loops=1)
+                                                   Sort Key: contracts.freelancer_id, (date_trunc('day'::text, contracts.created_at))
+                                                   Presorted Key: contracts.freelancer_id
+                                                   Full-sort Groups: 1146  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                                                   Buffers: shared hit=41103
+                                                   ->  Index Scan using idx_completed_gig on contracts  (cost=0.29..2769.22 rows=41426 width=18) (actual time=0.053..29.811 rows=41452.00 loops=1)
+                                                         Index Searches: 1
+                                                         Buffers: shared hit=41103
+ Planning:
+   Buffers: shared hit=186
+ Planning Time: 1.605 ms
+ Execution Time: 97.555 ms
+
+                                                          QUERY PLAN                                                          
+------------------------------------------------------------------------------------------------------------------------------
+ Index Scan using idx_active_gig on contracts  (cost=0.28..8.30 rows=1 width=30) (actual time=0.536..0.537 rows=1.00 loops=1)
+   Index Cond: (freelancer_id = 1)
+   Index Searches: 1
+   Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=154
+ Planning Time: 1.855 ms
+ Execution Time: 0.577 ms

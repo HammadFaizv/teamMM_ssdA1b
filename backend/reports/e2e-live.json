@@ -1,0 +1,34 @@
+{
+  "testedAt": "2026-10-14T13:55:52.231Z",
+  "dataset": "configured PostgreSQL/MongoDB scale dataset",
+  "passed": true,
+  "checks": [
+    "demo actor entry",
+    "worker profile and prefilled funding",
+    "insufficient funds preserves input",
+    "funding redirect and audit notice",
+    "start contract",
+    "second active contract conflict",
+    "complete first and start second",
+    "freelancer access restrictions",
+    "read-only admin",
+    "audit history",
+    "SQL analytics and materialized refresh",
+    "MongoDB reviews and portfolio",
+    "geolocation denial/grant",
+    "distance list",
+    "map popup, zoom, recenter, close and tile fallback",
+    "persistent actor/location state",
+    "live worker ping appears through polling without page reload",
+    "mobile overflow",
+    "no JavaScript runtime exceptions"
+  ],
+  "createdContracts": [
+    "60006",
+    "60007"
+  ],
+  "screenshots": [
+    "docs/design/desktop.png",
+    "docs/design/mobile.png"
+  ]
+}

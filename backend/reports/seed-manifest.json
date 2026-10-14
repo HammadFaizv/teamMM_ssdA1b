@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-10-14T18:34:43.508Z",
+  "baseCity": {
+    "name": "Hyderabad",
+    "latitude": 17.45452,
+    "longitude": 78.35008,
+    "radius_km": 10
+  },
+  "counts": {
+    "clients": 1000,
+    "freelancers": 2000,
+    "contracts": 60000,
+    "audits": 101000,
+    "pings": 500000,
+    "reviews": 41860,
+    "portfolios": 2000
+  },
+  "names": "Curated first and last names, unique across clients and freelancers, no numeric suffixes",
+  "locationsExpireAfterHours": 2,
+  "resetScope": "GigTask application tables and three MongoDB collections only",
+  "history": "Synthetic ledger written directly: an opening deposit per client, a hold per contract and partial top-ups. Every contract reduces the client balance and the ledger ends exactly at the current balance. The live funding workflow is tested separately through the stored procedure and trigger."
+}

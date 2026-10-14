@@ -1,0 +1,77 @@
+{
+  "project": "GigTask",
+  "database": "MongoDB",
+  "purpose": "Document structure and validation map for Member 3",
+  "collections": {
+    "Portfolios": {
+      "purpose": "Flexible freelancer skills and certifications",
+      "required_fields": {
+        "freelancer_id": "integer/long (freelancers.id in PostgreSQL)",
+        "skills": "array<string>",
+        "certifications": "array<object>"
+      },
+      "optional_fields": {
+        "name": "string",
+        "projects": "array<object>"
+      },
+      "indexes": [
+        "uq_portfolios_freelancer_id: { freelancer_id: 1 }, unique",
+        "idx_portfolios_skills: { skills: 1 }"
+      ]
+    },
+    "GigReviews": {
+      "purpose": "Worker reviews with ratings and skill-tags",
+      "required_fields": {
+        "freelancer_id": "integer/long (freelancers.id in PostgreSQL)",
+        "rating": "number, 1-5",
+        "skill_tags": "array<string>",
+        "created_at": "date"
+      },
+      "optional_fields": {
+        "contract_id": "integer/long (contracts.id in PostgreSQL)",
+        "review_text": "string"
+      },
+      "indexes": [
+        "idx_gigrevs_freelancer_created: { freelancer_id: 1, created_at: -1 }",
+        "idx_gigrevs_rating: { rating: 1 }"
+      ]
+    },
+    "WorkerLocations": {
+      "purpose": "Real-time geospatial logs of active physical laborers",
+      "required_fields": {
+        "freelancer_id": "integer/long (freelancers.id in PostgreSQL)",
+        "is_available": "boolean",
+        "location": {
+          "type": "GeoJSON Point",
+          "coordinates": "[longitude, latitude]"
+        },
+        "created_at": "date"
+      },
+      "indexes": [
+        "idx_workerlocations_2dsphere: { location: 2dsphere }",
+        "idx_workerlocations_ttl_2h: { created_at: 1 }, expireAfterSeconds=7200",
+        "idx_current_worker_geo: { location: 2dsphere }, partial {is_current:true}",
+        "uq_workerlocations_current: { freelancer_id: 1 }, unique, partial {is_current:true}"
+      ],
+      "optional_fields": {
+        "is_current": "boolean: true on exactly one ping per worker (the latest); a new ping clears the previous flag first"
+      }
+    }
+  },
+  "workflows": {
+    "workflow_3": {
+      "file": "mongo/02_workflow3_geonear.js",
+      "operator": "$geoNear",
+      "requirement": "Closest available freelancer to a physical job site within 5 km"
+    },
+    "workflow_4": {
+      "file": "mongo/03_workflow4_facet.js",
+      "operator": "$facet",
+      "requirement": [
+        "Rating distribution",
+        "Top skill-tags using $unwind",
+        "Overall worker average rating"
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+Index Scan using idx_active_gig on contracts  (cost=0.14..8.16 rows=1 width=30) (actual time=0.042..0.047 rows=1.00 loops=1)
+  Index Cond: (freelancer_id = 1801)
+  Index Searches: 1
+  Buffers: shared hit=2
+Planning Time: 0.374 ms
+Execution Time: 0.139 ms

@@ -1,0 +1,43 @@
+Sort  (cost=7476.03..7476.53 rows=200 width=52) (actual time=278.001..278.321 rows=1400.00 loops=1)
+  Sort Key: (dense_rank() OVER w1), latest_freelancer_avg.freelancer_id
+  Sort Method: quicksort  Memory: 117kB
+  Buffers: shared hit=230
+  ->  WindowAgg  (cost=7464.91..7468.39 rows=200 width=52) (actual time=273.005..276.762 rows=1400.00 loops=1)
+        Window: w1 AS (ORDER BY latest_freelancer_avg.moving_avg_revenue ROWS UNBOUNDED PRECEDING)
+        Storage: Memory  Maximum Storage: 17kB
+        Buffers: shared hit=230
+        ->  Sort  (cost=7464.89..7465.39 rows=200 width=44) (actual time=272.985..273.373 rows=1400.00 loops=1)
+              Sort Key: latest_freelancer_avg.moving_avg_revenue DESC
+              Sort Method: quicksort  Memory: 103kB
+              Buffers: shared hit=230
+              ->  Subquery Scan on latest_freelancer_avg  (cost=35.81..7457.25 rows=200 width=44) (actual time=1.257..270.300 rows=1400.00 loops=1)
+                    Buffers: shared hit=230
+                    ->  Unique  (cost=35.81..7457.25 rows=200 width=44) (actual time=1.252..269.320 rows=1400.00 loops=1)
+                          Buffers: shared hit=230
+                          ->  Incremental Sort  (cost=35.81..7352.83 rows=41768 width=44) (actual time=1.250..264.208 rows=12600.00 loops=1)
+                                Sort Key: seven_day_freelancer_avg.freelancer_id, seven_day_freelancer_avg.earning_day DESC
+                                Presorted Key: seven_day_freelancer_avg.freelancer_id
+                                Full-sort Groups: 350  Sort Method: quicksort  Average Memory: 26kB  Peak Memory: 26kB
+                                Buffers: shared hit=230
+                                ->  Subquery Scan on seven_day_freelancer_avg  (cost=1.69..5217.35 rows=41768 width=44) (actual time=0.366..247.389 rows=12600.00 loops=1)
+                                      Buffers: shared hit=230
+                                      ->  WindowAgg  (cost=1.69..4799.67 rows=41768 width=76) (actual time=0.364..240.580 rows=12600.00 loops=1)
+                                            Window: w1 AS (PARTITION BY contracts.freelancer_id ORDER BY (date_trunc('day'::text, contracts.created_at)) RANGE BETWEEN '6 days'::interval PRECEDING AND CURRENT ROW)
+                                            Storage: Memory  Maximum Storage: 17kB
+                                            Buffers: shared hit=230
+                                            ->  GroupAggregate  (cost=1.57..4068.73 rows=41768 width=44) (actual time=0.300..157.142 rows=12600.00 loops=1)
+                                                  Group Key: contracts.freelancer_id, (date_trunc('day'::text, contracts.created_at))
+                                                  Buffers: shared hit=230
+                                                  ->  Incremental Sort  (cost=1.57..3128.95 rows=41768 width=18) (actual time=0.257..90.761 rows=41860.00 loops=1)
+                                                        Sort Key: contracts.freelancer_id, (date_trunc('day'::text, contracts.created_at))
+                                                        Presorted Key: contracts.freelancer_id
+                                                        Full-sort Groups: 700  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+                                                        Buffers: shared hit=230
+                                                        ->  Index Only Scan using idx_completed_revenue_cover on contracts  (cost=0.29..1651.23 rows=41768 width=18) (actual time=0.094..49.144 rows=41860.00 loops=1)
+                                                              Heap Fetches: 0
+                                                              Index Searches: 1
+                                                              Buffers: shared hit=230
+Planning:
+  Buffers: shared hit=16
+Planning Time: 1.194 ms
+Execution Time: 278.873 ms

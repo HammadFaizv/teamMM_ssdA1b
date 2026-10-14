@@ -1,0 +1,151 @@
+{
+  "checkedAt": "2026-10-14T17:50:03.331Z",
+  "checks": [
+    {
+      "name": "Required data scale",
+      "passed": false,
+      "error": "401E2EAA587F0000:error:0A000438:SSL routines:ssl3_read_bytes:tlsv1 alert internal error:../deps/openssl/openssl/ssl/record/rec_layer_s3.c:918:SSL alert number 80\n"
+    },
+    {
+      "name": "No numeric names and all participant names unique",
+      "passed": true,
+      "milliseconds": 39,
+      "details": {
+        "numeric_names": "0",
+        "duplicate_names": "0"
+      }
+    },
+    {
+      "name": "Every audit row and current client balance reconcile chronologically",
+      "passed": true,
+      "milliseconds": 649
+    },
+    {
+      "name": "Contracts reduce balances: each client opens above the current balance and never dips below it",
+      "passed": true,
+      "milliseconds": 1161,
+      "details": {
+        "not_reduced": "0",
+        "dips_below": "0",
+        "without_holds": "0",
+        "smallest_reduction": "99681.20"
+      }
+    },
+    {
+      "name": "Positive budgets, balances, statuses and unique active freelancer",
+      "passed": true,
+      "milliseconds": 41
+    },
+    {
+      "name": "The demo origin has available workers within 5 km",
+      "passed": true,
+      "milliseconds": 20,
+      "details": {
+        "availableWithin5km": 1200
+      }
+    },
+    {
+      "name": "MongoDB IDs link to SQL; portfolios and pings have expected coverage",
+      "passed": false,
+      "error": "Topology is closed"
+    },
+    {
+      "name": "MongoDB geospatial, TTL and current-ping indexes",
+      "passed": false,
+      "error": "Topology is closed"
+    },
+    {
+      "name": "Materialized view agrees with completed contract totals",
+      "passed": true,
+      "milliseconds": 252
+    },
+    {
+      "name": "Capture PostgreSQL workflow execution plans",
+      "passed": true,
+      "milliseconds": 298,
+      "details": {
+        "windowUsesCoveringIndex": true,
+        "activeUsesPartialIndex": true
+      }
+    },
+    {
+      "name": "Capture MongoDB workflow execution statistics",
+      "passed": false,
+      "error": "Topology is closed"
+    },
+    {
+      "name": "Large-list pagination, name search, ownership and selected analytics APIs",
+      "passed": false,
+      "error": "Expected values to be strictly equal:\n\n503 !== 200\n"
+    },
+    {
+      "name": "Geo API at scale is fresh, unique, distance sorted and paginated",
+      "passed": false,
+      "error": "A database is unavailable. Check the backend connection configuration and retry.\n\n503 !== 200\n"
+    },
+    {
+      "name": "Funding procedure and audit trigger rollback on insufficient funds",
+      "passed": true,
+      "milliseconds": 87
+    }
+  ],
+  "counts": {
+    "clients": 1000,
+    "freelancers": 2000,
+    "contracts": 60000,
+    "wallet_audit_logs": 101000
+  },
+  "requests": [
+    {
+      "path": "contracts?page=2&limit=10",
+      "status": 200,
+      "milliseconds": 141
+    },
+    {
+      "path": "clients/2",
+      "status": 403,
+      "milliseconds": 22
+    },
+    {
+      "path": "freelancers?search=Aarav&limit=10",
+      "status": 200,
+      "milliseconds": 38
+    },
+    {
+      "path": "analytics/revenue?freelancerId=3",
+      "status": 200,
+      "milliseconds": 23
+    },
+    {
+      "path": "analytics/rankings?freelancerId=3",
+      "status": 200,
+      "milliseconds": 480
+    },
+    {
+      "path": "freelancers/3/portfolio",
+      "status": 503,
+      "milliseconds": 19
+    },
+    {
+      "path": "workers/nearby?lat=17.45452&lng=78.35008&limit=10",
+      "status": 503,
+      "milliseconds": 16
+    },
+    {
+      "path": "clients/1",
+      "status": 200,
+      "milliseconds": 15
+    },
+    {
+      "path": "contracts/fund",
+      "status": 409,
+      "milliseconds": 54
+    },
+    {
+      "path": "clients/1",
+      "status": 200,
+      "milliseconds": 16
+    }
+  ],
+  "finishedAt": "2026-10-14T17:50:16.156Z"
+}
