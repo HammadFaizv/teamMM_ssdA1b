@@ -1,27 +1,52 @@
 # GigTask handover note
 
-This retrospective note records what was inherited and changed; it does not claim the original team designed the new UI or API.
+A retrospective record of what was inherited and what changed. It does not claim the original team designed the new UI or API. The inherited repository is kept in `backend/database/` (formerly `avni_db/`); the BiteStream repository was read only as a reference and nothing was copied from it.
 
-The inherited repository is retained in `backend/database/` (formerly `avni_db/`). PostgreSQL contains clients, freelancers, contracts, escrow audit logs, partial indexes, a stored funding procedure, a seven-day window query and a lifetime-earnings materialized view. MongoDB contains validated portfolios/reviews/location logs, geospatial and TTL indexes, and standalone geo/facet scripts. The supplied BiteStream repository was read only as a reference; its schema was not copied.
+## Inherited vs. current database
 
-The largest correctness issues were the original funding procedure increasing the balance rather than deducting available funds, an ID printed only through NOTICE, and unrelated MongoDB UUIDs that could not join integer SQL freelancer IDs. Interactive `use` statements also prevented reliable JavaScript-file execution. Explicitly seeded SQL IDs needed sequence synchronization.
+| Area | Inherited | Current |
+|---|---|---|
+| `01` schema | No defaults on `created_at` or `status`; `action_type` nullable; FKs added via `ALTER TABLE` | Defaults (`now()`, `FUNDED`); `action_type NOT NULL`; `CHECK (budget > 0)`; inline FKs; no client coordinates |
+| `02` indexes | Plain `CREATE INDEX` (fails on re-run); extra `freelancer_id` index | `IF NOT EXISTS` throughout; covering index for Workflow 2; `(client_id, timestamp, id)` audit index; redundant indexes dropped |
+| `03` audit trigger | Increase logged as `ESCROW_HOLD`, decrease as `ESCROW_RELEASE` (backwards) | Labels corrected; second trigger makes `wallet_audit_logs` append-only |
+| `04` `fund_gig` | Adds the budget instead of deducting; no balance or availability check; ID only printed via `NOTICE` | Deducts; rejects insufficient balance and unavailable workers; requires `REPEATABLE READ`; returns the contract ID. A 3-argument wrapper commits, rolls back and retries serialization failures |
+| `05` materialized view | View and unique index only | Adds `refresh_freelancer_earnings()` (concurrent refresh) |
+| `06` window query | No final `ORDER BY` | Ordered by rank, then freelancer |
+| `07` API objects | Did not exist | Idempotency table, refresh timestamp, forward-only status trigger, `api_refresh_earnings()` |
+| Mongo `01` | Hard-coded `use gigtask_db;`; IDs may be strings or UUIDs; no current-ping concept | Re-runnable; integer IDs matching SQL; `is_current` flag with a partial 2dsphere index and a unique partial index (one current ping per worker) |
+| Mongo `02` (geo) | Up to 20 results, no freshness filter | Current, available pings from the last 2 hours, top 5; availability confirmed in SQL |
+| Mongo `03` (facet) | Hard-coded `use` | Same pipeline, `use` removed |
+| Seeders | `mongo_seeder.py` appends on every run with unrelated UUIDs; `postgres_seeder.py` needs `POSTGRES_*` variables | `mongo_seeder.py` is repeatable and linked to SQL IDs; `postgres_seeder.py` also accepts `DATABASE_URL` |
 
-Additive migrations correct funding while retaining the original scripts for comparison. The API owns a transaction containing client locking, the stored procedure, trigger audit, structured contract output and idempotency storage. Database checks protect positive budgets/nonnegative balances, forward status transitions and one IN_PROGRESS contract per worker; audit entries are append-only. Multiple FUNDED contracts are allowed. Completion does not implement a payout or refund.
+Explicitly seeded SQL IDs need identity sequences synchronised after seeding.
 
-The browser now uses an independent HTTP API and configurable database connection URLs. Permissions follow the selected demo actor, with no real authentication required. PostgreSQL does financial/relational work and window analytics; MongoDB executes the geo and facet workflows. Fresh/latest location filtering prevents expired and historical duplicate pings from appearing as current workers. Discovery results are joined back to SQL availability.
+## What the new work does
 
-The small functional seed has been supplemented with an explicit replacement scale seeder: 1,000 clients, 2,000 freelancers, 60,000 contracts, 101,000 reconciled audit entries (a hold per contract, partial top-ups, balances that end at the current balance), one portfolio per worker, reviews linked to completed contracts, and 500,000 location pings. Names use curated first/last combinations without digits. Coordinates remain near the user's supplied Hyderabad origin. Pings have a two-hour lifetime, so count/performance evidence must be captured shortly after seeding; this is intended TTL behavior, not durable telemetry storage.
+- **Funding:** the API owns one `REPEATABLE READ` transaction covering client locking, `fund_gig`, the audit trigger, structured contract output and idempotency storage. It takes the idempotency advisory lock before the transaction starts.
+- **Integrity:** checks enforce positive budgets, non-negative balances, forward-only status changes and one `IN_PROGRESS` contract per worker. Several `FUNDED` contracts are allowed. Completion does not pay out or refund.
+- **Architecture:** the browser talks to an independent HTTP API using configurable database URLs. Permissions follow the selected demo actor; there is no real authentication. PostgreSQL handles money, relations and window analytics; MongoDB handles the geo and facet workflows.
+- **Location:** only each worker's latest, unexpired ping counts as current, so expired and duplicate pings never show up as workers.
+- **Migrations:** `npm run db:migrate` upgrades databases created by earlier revisions and is safe to re-run. SQL is `01`–`06` as the assignment lists them, plus one API-only `07`.
 
-The available-balance interpretation of escrow is documented. Revenue is attributed to creation date and averages recorded revenue days in a seven-calendar-day range. Earnings remain cached until explicit concurrent refresh. An unfiltered full-platform facet necessarily processes every review; its collection scan must be reported honestly alongside selective indexed review access.
+## Data and caveats
 
-Suggestions to the original authors: provide returned transaction IDs, shared cross-database IDs, repeatable configurable seed scripts, explicitly stated money semantics, and reproducible execution plans. Team-specific repository history, contribution details, final commit and demo video must be supplied by the submitting team. Fresh verification evidence lives in `backend/reports/`; inherited performance captures remain historical evidence only.
+- **Scale seed:** 1,000 clients, 2,000 freelancers, 60,000 contracts, 101,000 reconciled audit entries, one portfolio per worker, reviews linked to completed contracts and 500,000 pings. Names use curated first/last combinations without digits, and coordinates stay near the Hyderabad origin.
+- **Unchanged Mongo requirements:** `WorkerLocations` still has the `2dsphere` index on `location` and the 2-hour TTL index (`expireAfterSeconds: 7200`) on `created_at`. The current version only adds a partial 2dsphere index and a unique index on `is_current` pings.
+- **Ping lifetime:** pings expire after two hours, so capture count and performance evidence soon after seeding. This is intended TTL behaviour, not durable storage.
+- **Money and revenue:** escrow is treated as available balance. Revenue is attributed to the contract creation date and averaged over recorded days in a seven-calendar-day range. Earnings stay cached until an explicit concurrent refresh.
+- **Facet scan:** the unfiltered platform-wide facet reads every review, so its collection scan should be reported honestly next to selective indexed review access.
 
-## Known problem 1: Workflow 1 isolation level (fixed)
+## Fixed issue: Workflow 1 isolation level
 
-Assignment 1 requires the atomic funding workflow to run in a `REPEATABLE READ` transaction, COMMIT on success and ROLLBACK on error. The inherited `fund_gig`, and our first migration of it, set no isolation level and had no exception handling; the API's `BEGIN` ran at the default `READ COMMITTED`, so funding correctness rested only on the `FOR UPDATE` row lock. Fixed in `backend/database/sql/04_stored_procedures.sql`: the API-facing four-argument `fund_gig` refuses to run below `REPEATABLE READ`, and the three-argument `fund_gig` starts its own `REPEATABLE READ` transaction, commits, and rolls back and re-raises on error, retrying serialization failures. The API now begins `ISOLATION LEVEL REPEATABLE READ` too and takes its idempotency advisory lock at session level before the transaction.
+Assignment 1 requires `REPEATABLE READ`, COMMIT on success and ROLLBACK on error. The inherited `fund_gig` set no isolation level and had no error handling, so correctness rested on the `FOR UPDATE` lock alone. The four-argument `fund_gig` now refuses to run below `REPEATABLE READ`, and the three-argument form manages its own transaction as described above. The API also begins at `REPEATABLE READ`.
 
-## Scripts consolidated to the assignment layout
+## Consolidation to the assignment layout
 
-The earlier work spread Part A across the inherited files plus three extra migrations (`08` client coordinates, `09` covering index, `10` isolation fix) and duplicated `fund_gig` in `04` and `07`. SQL is now `01` to `06` as the assignment lists them, plus a single `07_api_integration.sql` holding only API objects (idempotency table, refresh timestamp, forward-only status trigger). Client latitude/longitude columns were dropped from the schema: they were a demo convenience the assignment's `clients` table does not have, and the API never read them (the frontend's default job site is now a constant). The audit-immutability trigger moved into `03`, the Workflow 2 covering index into `02`.
+Earlier work added three extra migrations (`08` client coordinates, `09` covering index, `10` isolation fix) and duplicated `fund_gig` in `04` and `07`. These were merged back: the audit-immutability trigger lives in `03`, the covering index in `02`, and `07` holds only API objects. The client latitude/longitude columns were dropped because the assignment's `clients` table has none and the API never read them. On the Mongo side, the unique current-ping index removed the `$group`/`$lookup` stages and the unbounded in-memory result from Workflow 3.
 
-On the MongoDB side, `freelancer_id` is now an integer everywhere (the inherited validators and seeder allowed UUID strings that could never join to SQL), and each worker has exactly one current ping, enforced by a unique partial index. That removed the `$group`/`$lookup` stages from Workflow 3 and the unbounded in-memory result set. The inherited `mongo_seeder.py` was rewritten to produce linked, repeatable data. `npm run db:migrate` upgrades databases created by the earlier revisions. The remaining open items are listed in `docs/problems.md`.
+## Notes
+
+- **Forked team copy:** `team_4_a2_frontend/backend` keeps the team's original `database/` files unchanged. The current versions are in `database/a2/`, and `scripts/migrate.js` and `scripts/audit-scale.js` read from there.
+- **For the original authors:** return transaction IDs, share IDs across databases, make seed scripts repeatable and configurable, state money semantics explicitly, and keep execution plans reproducible.
+- **Still needed from the submitting team:** repository history, contribution details, the final commit and the demo video.
+- **Evidence:** fresh verification output is in `backend/reports/`; inherited performance captures are historical only. Open items are in `docs/problems.md`.

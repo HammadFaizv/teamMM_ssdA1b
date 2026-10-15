@@ -1,3 +1,5 @@
+import {createFrontendServer} from '../../frontend/server.js';
+import {staticFiles} from '../../frontend/static-files.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtempSync,rmSync} from 'node:fs';
@@ -52,4 +54,25 @@ test('client searches use names while admin searches also accept IDs',async()=>{
  assert.equal((await request('freelancers?search=48',{actor:client})).total,0);
  assert.ok((await request('freelancers?search=48',{actor:admin})).data.some(f=>f.id===48));
  assert.ok((await request('contracts?search=1&limit=100',{actor:admin})).data.some(c=>c.id===1));
+});
+
+
+test('both frontend servers serve every public module and keep private files inaccessible', async () => {
+ const frontend = createFrontendServer();
+ await new Promise(resolve => frontend.listen(0, '127.0.0.1', resolve));
+ try {
+  for (const origin of [base, `http://127.0.0.1:${frontend.address().port}`]) {
+   for (const pathname of Object.keys(staticFiles)) {
+    const response = await fetch(origin + pathname);
+    assert.equal(response.status, 200, pathname);
+    if (pathname.endsWith('.js')) assert.match(response.headers.get('content-type'), /javascript/);
+    assert.ok((await response.text()).length, pathname);
+   }
+   for (const pathname of ['/.env', '/server.js', '/package.json', '/static-files.js', '/shared/missing.js', '/__proto__']) {
+    assert.equal((await fetch(origin + pathname)).status, 404, pathname);
+   }
+  }
+ } finally {
+  await new Promise(resolve => frontend.close(resolve));
+ }
 });

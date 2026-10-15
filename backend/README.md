@@ -199,3 +199,7 @@ Behaviour changes worth knowing:
 - **Reports.** `backend/reports/` was produced by the earlier pipeline and indexes. Re-run `npm run audit:scale` against your database after migrating to refresh it.
 - **Validation.** Identifiers must be integers (numbers or digit strings), budgets must be a string or number, coordinates must be plain decimals, and `%`/`_` in searches match literally.
 - **Tests.** `npm test` skips the real-database suite unless `TEST_DATABASE_URL` and `TEST_MONGODB_URI` are set; `npm run test:full` makes missing databases a failure.
+
+## Frontend module compatibility — 15 October 2026
+
+The SQLite demo server now uses `frontend/static-files.js` to serve the frontend's `pages/` and `shared/` ES modules after the page refactor. The independent frontend server uses the same explicit allowlist. Private files such as `.env`, server source and package metadata remain inaccessible. API routes, database schemas and data were not changed. Regression tests cover module delivery through both servers and private-file rejection.

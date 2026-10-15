@@ -39,4 +39,41 @@ The active appearance has been reverted to the FedEx-inspired deep blue/indigo a
 
 The active appearance follows the supplied "Monolith" reference and replaces the earlier themes described above, then was simplified. It fills the whole window on a flat off-white background, in black Inter type with hot pink and acid lime used sparingly. From the top: a slim full-width pink strip with the GigTask wordmark and a lime edge, then a small uppercase navigation bar (brand, six page links spread across, actor switch) that stays fixed to the top of the window while scrolling, a breadcrumb line, a very large light page title with a short right-aligned description, a facts column (actor, role, scope, year) beside a statement paragraph with a lime highlighter underline on its key phrase, summary figures between hairlines, the data panel, and a closing line. Tables are hairline rows with plain underlined links, buttons are square (black for the main action, outlined otherwise), cards and freelancer tiles have hairline borders, and map markers are black.
 
-Every page has its own tagline, statement and closing line (`QUOTES` in `app.js`), and empty, loading and error states carry a short GigTask-themed quote. All of it is static text. Decoration is CSS only, so the frontend server still serves only `index.html`, `app.js` and `styles.css`. Element ids, routes and API behaviour are unchanged, and the browser smoke test passes against it.
+Every page has its own tagline, statement and closing line (`QUOTES` in `shared/editorial.js`), and empty, loading and error states carry a short GigTask-themed quote. All of it is static text. Decoration is CSS only, so no image assets are needed. The frontend server serves the entry files and the explicitly allowed page/shared modules. Element ids, routes and API behaviour are unchanged, and the browser smoke test passes against it.
+
+
+## Frontend module layout
+
+`app.js` is the small browser entry point: it registers event handlers and renders the initial route. Pages are native ES modules, with no build step or new runtime dependencies.
+
+```text
+frontend/
+  app.js                  Browser bootstrap
+  pages/
+    browse.js             Client, freelancer and contract browsing
+    fund.js               Funding form, validation and submission
+    audit.js              Escrow audit history
+    analytics.js          Revenue, lifetime earnings and rankings
+    nearby.js             Browser location and nearby worker results
+    reviews.js            Reviews and portfolios
+    details.js            Contract, freelancer and client detail views
+  shared/
+    api.js                HTTP requests, demo headers, timeouts and errors
+    state.js              Actor, saved filters, drafts and request state
+    storage.js            Safe local storage access
+    router.js             Hash routes, navigation and role visibility
+    render.js             Page dispatch, loading/error states and polling
+    actors.js             Demo actor dialog and switching
+    events.js             Shared filters, pagination and navigation guards
+    ui.js                 Formatting, tables, messages and other UI helpers
+    layout.js             Navigation header and summary statistics
+    editorial.js          Per-page headings and editorial copy
+    components.js         Freelancer picker, portfolio and bar rendering
+    map.js                Interactive map dialog, tiles and markers
+  server.js               Static HTTP server and public API configuration
+  static-files.js         Explicit public file allowlist
+```
+
+Change a page in its `pages/` module. Shared state is accessed through `session` so actor changes and request-generation checks remain consistent across modules. Existing hash URLs, API endpoints, saved preferences and funding drafts retain their behavior. Both the independent frontend server and the SQLite demo server serve the module tree; the Docker image includes it too. When adding a browser module, add its path to `static-files.js`.
+
+Validation: `npm test` and `npm run test:browser` from the workspace root. Browser checks start temporary servers and clean them up; no database reseeding is needed for this refactor.

@@ -1,3 +1,4 @@
+import {staticFiles} from './static-files.js';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -7,8 +8,8 @@ export function createFrontendServer({apiBaseUrl=process.env.FRONTEND_API_URL||'
   if(req.method!=='GET'&&req.method!=='HEAD'){res.writeHead(405);res.end();return;}
   const path=new URL(req.url,'http://localhost').pathname;
   if(path==='/config.js'){res.setHeader('Content-Type','text/javascript');res.setHeader('Cache-Control','no-store');res.end(`window.GIGTASK_CONFIG = ${JSON.stringify({apiBaseUrl}).replace(/</g,'\\u003c')};`);return;}
-  const files={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/styles.css':'styles.css'};
-  if(!files[path]){res.writeHead(404);res.end('Page not found');return;}
+  const files=staticFiles;
+  if(!Object.hasOwn(files,path)){res.writeHead(404);res.end('Page not found');return;}
   const file=files[path];res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');const content=await readFile(new URL(file,import.meta.url));res.end(req.method==='HEAD'?undefined:content);
  }catch{res.writeHead(500);res.end('Could not load frontend.');}});
 }

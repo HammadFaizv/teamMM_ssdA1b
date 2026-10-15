@@ -1,3 +1,4 @@
+import {staticFiles} from '../../frontend/static-files.js';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -116,7 +117,7 @@ export function createApplication({databasePath}={}) {
    res.end(JSON.stringify({...result,mode:'demo-sqlite'}));return;
   }
   if(req.method!=='GET')fail(405,'Method not allowed.');
-  if(url.pathname==='/config.js'){res.setHeader('Content-Type','text/javascript');res.end('window.GIGTASK_CONFIG = { apiBaseUrl: "/api" };');return;}const allowed={'/':'index.html','/index.html':'index.html','/app.js':'app.js','/styles.css':'styles.css'};const file=allowed[url.pathname];if(!file)fail(404,'Page not found.');
+  if(url.pathname==='/config.js'){res.setHeader('Content-Type','text/javascript');res.end('window.GIGTASK_CONFIG = { apiBaseUrl: "/api" };');return;}const file=Object.hasOwn(staticFiles,url.pathname)?staticFiles[url.pathname]:null;if(!file)fail(404,'Page not found.');
   res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');res.end(await readFile(new URL('../../frontend/'+file,import.meta.url)));
  }catch(e){if(!e.status)console.error(e);res.writeHead(e.status||500,{'Content-Type':'application/json'});res.end(JSON.stringify({error:e.status?e.message:'The server could not complete this action. Please retry.'}));}});
  return {server,db};
